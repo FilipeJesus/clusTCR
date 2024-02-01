@@ -12,3 +12,6 @@ dist/
 .ipynb_checkpoints
 .sass-cache/
 _site/
+
+Data/
+data/

@@ -10,7 +10,7 @@ from clustcr.input.tenx import parse_10x
 from os.path import join, dirname, abspath
 
 DIR = dirname(abspath(__file__))
-vdjdb_location = join(DIR, 'vdjdb/vdjdb_full.txt')
+vdjdb_location = join(DIR, 'vdjdb_trb.tsv')
 
 
 def test_cdr3():

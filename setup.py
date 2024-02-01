@@ -2,16 +2,8 @@ from setuptools import setup, find_packages
 import versioneer
 
 # conda package requirements
-requirements = [
-    'numpy',
-    'pandas',
-    'networkx',
-    'scikit-learn',
-    'markov_clustering',
-    'pyteomics',
-    'parmap',
-    # 'tcrdist3'
-]
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
 
 setup(
     name='clusTCR',
@@ -32,10 +24,12 @@ setup(
     },
     include_package_data=True,
     install_requires=requirements,
+    extras_require={
+        "Plot": ["seaborn", "matplotlib"],
+    },
+    python_requires='>=3.8',
     keywords='https://github.com/svalkiers/clustcr',
     classifiers=[
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'
     ]
 )

@@ -7,7 +7,7 @@ from clustcr.clustering.metrics import Metrics
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import auc, plot_roc_curve
+from scikitplot.metrics import auc, plot_roc_curve
 
 
 def profile_matrix(sequences : list):
