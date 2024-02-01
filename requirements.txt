@@ -7,3 +7,6 @@ pyteomics
 parmap
 python-Levenshtein
 faiss
+matplotlib
+scipy==1.8
+python-louvain
