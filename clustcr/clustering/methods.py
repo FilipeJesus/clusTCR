@@ -103,23 +103,28 @@ def clusters_without_hd1_edges(edges, cluster_contents):
         del edges[id]
     return clusters
 
-def MCL_multiprocessing_from_preclusters(cdr3, preclust, mcl_hyper, n_cpus):
+def MCL_multiprocessing_from_preclusters(cdr3, preclust, distance_metric, mcl_hyper, n_cpus):
     """
     Pool multiple processes for parallelization using multiple cpus.
     """
     cluster_contents = preclust.cluster_contents()
-    edges = {i: create_edgelist(cluster) for i, cluster in enumerate(cluster_contents)}
+    edges = {
+        i: create_edgelist(cluster, method=distance_metric)
+        for i, cluster in enumerate(cluster_contents)
+    }
     # Clusters containing no edges with HD = 1 are isolated
     # clusters = clusters_without_hd1_edges(edges, cluster_contents)
     remaining_edges = edges.values()
     # Perform MCL on other clusters
     with multiprocessing.Pool(n_cpus) as pool:
-        nodelist = parmap.map(MCL_multi,
-                              remaining_edges,
-                              cdr3,
-                              mcl_hyper=mcl_hyper,
-                              pm_parallel=True,
-                              pm_pool=pool)
+        nodelist = parmap.map(
+            MCL_multi,
+            remaining_edges,
+            cdr3,
+            mcl_hyper=mcl_hyper,
+            pm_parallel=True,
+            pm_pool=pool
+        )
         # nodelist += clusters
 
     # Fix cluster ids
@@ -128,12 +133,12 @@ def MCL_multiprocessing_from_preclusters(cdr3, preclust, mcl_hyper, n_cpus):
             nodelist[c]['cluster'] += nodelist[c - 1]['cluster'].max() + 1
     return pd.concat(nodelist, ignore_index=True)
 
-def MCL_from_preclusters(cdr3, preclust, mcl_hyper):
+def MCL_from_preclusters(cdr3, preclust, distance_metric, mcl_hyper):
     initiate = True
     nodelist = pd.DataFrame(columns=["junction_aa", "cluster"])
     for c in preclust.cluster_contents():
         try:
-            edges = create_edgelist(c)
+            edges = create_edgelist(c, method=distance_metric)
             if initiate:
                 nodes = MCL(cdr3, edges, mcl_hyper=mcl_hyper)
                 nodelist = pd.concat([nodelist,nodes],ignore_index=True)
@@ -153,12 +158,15 @@ def MCL_from_preclusters(cdr3, preclust, mcl_hyper):
                 nodelist = nodelist.append(cluster)
     return nodelist
 
-def louvain_multiprocessing_from_preclusters(cdr3, preclust, n_cpus):
+def louvain_multiprocessing_from_preclusters(cdr3, preclust, distance_metric, n_cpus):
     """
     Pool multiple processes for parallelization using multiple cpus.
     """
     cluster_contents = preclust.cluster_contents()
-    edges = {i: create_edgelist(cluster) for i, cluster in enumerate(cluster_contents)}
+    edges = {
+        i: create_edgelist(cluster, method=distance_metric)
+        for i, cluster in enumerate(cluster_contents)
+    }
     # Clusters containing no edges with HD = 1 are isolated
     clusters = clusters_without_hd1_edges(edges, cluster_contents)
     remaining_edges = edges.values()
@@ -177,12 +185,12 @@ def louvain_multiprocessing_from_preclusters(cdr3, preclust, n_cpus):
             nodelist[c]['cluster'] += nodelist[c - 1]['cluster'].max() + 1
     return pd.concat(nodelist, ignore_index=True)
 
-def louvain_from_preclusters(cdr3, preclust):
+def louvain_from_preclusters(cdr3, preclust, distance_metric):
     initiate = True
     nodelist = pd.DataFrame(columns=["junction_aa", "cluster"])
     for c in preclust.cluster_contents():
         try:
-            edges = create_edgelist(c)
+            edges = create_edgelist(c, method=distance_metric)
             if initiate:
                 nodes = louvain(cdr3, edges)
                 nodelist = pd.concat([nodelist,nodes],ignore_index=True)

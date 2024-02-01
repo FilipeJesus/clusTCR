@@ -40,16 +40,23 @@ $ conda update clustcr -c svalkiers -c bioconda -c pytorch -c conda-forge
 
 #### Environment
 
-To start developing, after cloning the repository, create the necessary environment
+To start developing, use the provided docker image, first build the image and then
+start developing within it.
 
 ```
-$ conda env create -f conda/env.yml
+docker build -t clusttcr .
+docker run -v $(pwd):/root/clusttcr -w /root/clusttcr -it clusttcr /bin/bash
 ```
 
-The requirements are slightly different for the GPU supported version
-
 ```
-$ conda env create -f conda/env_gpu.yml
+conda activate tcr
+pip3 install seaborn
+pip install .
+ln /opt/conda/envs/tcr/lib/libmkl_intel_ilp64.so /opt/conda/envs/tcr/lib/libmkl_intel_ilp64.so.1
+ln /opt/conda/envs/tcr/lib/libmkl_intel_thread.so /opt/conda/envs/tcr/lib/libmkl_intel_thread.so.1
+ln /opt/conda/envs/tcr/lib/libmkl_intel_lp64.so /opt/conda/envs/tcr/lib/libmkl_intel_lp64.so.1
+ln /opt/conda/envs/tcr/lib/libmkl_gnu_thread.so /opt/conda/envs/tcr/lib/libmkl_gnu_thread.so.1
+ln /opt/conda/envs/tcr/lib/libmkl_core.so /opt/conda/envs/tcr/lib/libmkl_core.so.1
 ```
 
 #### Building Packages

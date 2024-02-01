@@ -24,9 +24,6 @@ setup(
     },
     include_package_data=True,
     install_requires=requirements,
-    extras_require={
-        "Plot": ["seaborn", "matplotlib"],
-    },
     python_requires='>=3.8',
     keywords='https://github.com/svalkiers/clustcr',
     classifiers=[

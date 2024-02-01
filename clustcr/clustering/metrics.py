@@ -12,7 +12,13 @@ class Metrics:
         self.nodelist = nodelist  # pd.DataFrame with columns ["CDR3", "cluster"]
         self.epidata = epidata  # 'ground truth', pd.DataFrame of CDR3 sequences with corresponding epitope specificity (columns=["CDR3", "Epitope"])
 
+        self.epidata.rename(
+            columns={'CDR3': 'junction_aa', 'Epitope': 'epitope'},
+            inplace=True
+        )
+        self.nodelist.rename(columns={'CDR3': 'junction_aa'}, inplace=True)
         # Ensure all values correspond to CDR3s in nodelist and no duplicates remain
+
         self.gt = self.epidata[self.epidata["junction_aa"].isin(self.nodelist["junction_aa"])]
         self.gt = self.gt.drop_duplicates()
 
@@ -31,17 +37,21 @@ class Metrics:
         """
         self.gt["count"] = 1
         self.gt_baseline["count"] = 1
-        conf_mat_t = pd.pivot_table(self.gt, values='count',
-                                    index=self.gt["epitope"],
-                                    columns=self.gt["cluster"],
-                                    aggfunc=np.sum,
-                                    fill_value=0)
-        conf_mat_b = pd.pivot_table(self.gt_baseline,
-                                    values='count',
-                                    index=self.gt_baseline["epitope"],
-                                    columns=self.gt_baseline["cluster"],
-                                    aggfunc=np.sum,
-                                    fill_value=0)
+        conf_mat_t = pd.pivot_table(
+            self.gt, values='count',
+            index=self.gt["epitope"],
+            columns=self.gt["cluster"],
+            aggfunc=np.sum,
+            fill_value=0
+        )
+        conf_mat_b = pd.pivot_table(
+            self.gt_baseline,
+            values='count',
+            index=self.gt_baseline["epitope"],
+            columns=self.gt_baseline["cluster"],
+            aggfunc=np.sum,
+            fill_value=0
+        )
 
         return conf_mat_t, conf_mat_b
 
@@ -49,6 +59,8 @@ class Metrics:
         '''
         Cluster retention is the fraction of sequences that has been assigned to any cluster.
         '''
+        if len(self.epidata.junction_aa.unique()) == 0:
+            return 0
         return len(self.nodelist.junction_aa.unique()) / len(self.epidata.junction_aa.unique())
 
     def purity(self, conf_mat=None):
@@ -85,6 +97,12 @@ class Metrics:
             if p_b >= .9:
                 c_b += 1
 
+        if len(conf_mat[1].columns) == 0 and len(conf_mat[0].columns) == 0:
+            return 0, 0
+        elif len(conf_mat[1].columns) == 0:
+            return (c_t / len(conf_mat[0].columns), 0)
+        elif len(conf_mat[0].columns) == 0:
+            return (0, c_b / len(conf_mat[1].columns))
         return (c_t / len(conf_mat[0].columns), c_b / len(conf_mat[1].columns))
 
     def consistency(self, conf_mat=None):
@@ -106,7 +124,13 @@ class Metrics:
                 high = high + rec_max(mat.drop(row, axis=0).drop(col, axis=1))
 
             return high
-
+        
+        if len(conf_mat[0]) == 0 and len(conf_mat[1]) == 0:
+            return 0, 0
+        elif len(conf_mat[0]) == 0:
+            return (0, rec_max(conf_mat[1]) / len(self.gt_baseline))
+        elif len(conf_mat[1]) == 0:
+            return (rec_max(conf_mat[0]) / len(self.gt), 0)
         return (rec_max(conf_mat[0]) / len(self.gt), rec_max(conf_mat[1]) / len(self.gt_baseline))
 
     def summary(self, conf_mat=None):
@@ -126,14 +150,20 @@ class Metrics:
 
         """
 
-        summ = pd.DataFrame({'actual': [self.retention(),
-                                        self.purity(conf_mat)[0],
-                                        self.purity_90(conf_mat)[0],
-                                        self.consistency(conf_mat)[0]],
-                             'baseline': [self.retention(),
-                                          self.purity(conf_mat)[1],
-                                          self.purity_90(conf_mat)[1],
-                                          self.consistency(conf_mat)[1]], })
+        summ = pd.DataFrame({
+            'actual': [
+                self.retention(),
+                self.purity(conf_mat)[0], 
+                self.purity_90(conf_mat)[0],
+                self.consistency(conf_mat)[0]
+            ],
+            'baseline': [
+                self.retention(),
+                self.purity(conf_mat)[1],
+                self.purity_90(conf_mat)[1],
+                self.consistency(conf_mat)[1]
+            ]
+        })
         summ['metrics'] = ['retention', 'purity', 'purity_90', 'consistency']
 
         if self.name is not None:

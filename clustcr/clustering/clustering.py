@@ -77,7 +77,9 @@ class Clustering:
                  max_sequence_size=None,
                  fitting_data_size=None,
                  rnd_chunk_size=5000,
-                 second_pass="MCL"):
+                 second_pass="MCL",
+                 distance_metric='hamming'
+        ):
 
         """
         Parameters
@@ -97,6 +99,7 @@ class Clustering:
             DESCRIPTION. The default is 5000.
         """
         self.mcl_params = mcl_params if mcl_params is not None else [1.2, 2]
+        self.distance_metric = distance_metric.upper()
         self.method = method.upper()
         self.use_gpu = use_gpu
         self.faiss_cluster_size = faiss_cluster_size
@@ -214,13 +217,13 @@ class Clustering:
             if self.second_pass == "MCL":            
                 return ClusteringResult(
                     MCL_multiprocessing_from_preclusters(
-                        cdr3, super_clusters, self.mcl_params, self.n_cpus
+                        cdr3, super_clusters, self.distance_metric, self.mcl_params, self.n_cpus
                         )
                     )
             elif self.second_pass == "LOUVAIN":
                 return ClusteringResult(
                     louvain_multiprocessing_from_preclusters(
-                        cdr3, super_clusters, self.n_cpus
+                        cdr3, super_clusters, self.distance_metric, self.n_cpus
                         )
                     )
             else:
@@ -230,15 +233,15 @@ class Clustering:
             if self.second_pass == "MCL":
                 return ClusteringResult(
                     MCL_from_preclusters(
-                        cdr3, super_clusters, self.mcl_params
-                        )
+                        cdr3, super_clusters, self.distance_metric, self.mcl_params
                     )
+                )
             elif self.second_pass == "LOUVAIN":
                 return ClusteringResult(
                     louvain_from_preclusters(
-                        cdr3, super_clusters
-                        )
+                        cdr3, super_clusters, self.distance_metric
                     )
+                )
             else:
                 raise ClusTCRError(f"Unknown method: {self.second_pass}")
         
@@ -266,10 +269,10 @@ class Clustering:
         return data
         
     def _vgene_clustering(self, 
-                          data: pd.DataFrame, 
-                          cdr3_col: str, 
-                          v_gene_col: str
-                          ) -> ClusteringResult:
+            data: pd.DataFrame, 
+            cdr3_col: str, 
+            v_gene_col: str
+        ) -> ClusteringResult:
         """
         Pre-sort TCRs based on V gene family and apply clustering on each
         subset individually.
@@ -313,9 +316,10 @@ class Clustering:
             
             clusters = ClusteringResult(
                 MCL_multiprocessing_from_preclusters(
-                    subset["junction_aa"], super_clusters, self.mcl_params, self.n_cpus
-                    )
-                                        ).clusters_df
+                    subset["junction_aa"], super_clusters,
+                    self.distance_metric, self.mcl_params, self.n_cpus
+                )
+            ).clusters_df
             
             clusters.cluster += c
             subset = subset.merge(clusters, left_on="junction_aa", right_on="junction_aa")
@@ -354,8 +358,8 @@ class Clustering:
             cluster_ids = range(i, min(i + clusters_per_batch, npreclusters))
             preclusters = self._batch_process_preclusters(cluster_ids)
             mcl_result = MCL_multiprocessing_from_preclusters(
-                None, preclusters, self.mcl_params, self.n_cpus
-                )
+                None, preclusters, self.distance_metric, self.mcl_params, self.n_cpus
+            )
             mcl_result['cluster'] += max_cluster_id + 1
             max_cluster_id = mcl_result['cluster'].max()
             if calc_cluster_matrix:
@@ -401,7 +405,11 @@ class Clustering:
             try:
                 data = pd.Series(data)
             except ValueError:
-                raise ClusTCRError("Wrong input. Please provide an iterable object containing CDR3 amino acid sequences.")
+                print(data)
+                raise ClusTCRError(
+                    "Wrong input. Please provide an iterable "
+                    "object containing CDR3 amino acid sequences."
+                )
         if alpha is not None:
             assert len(data) == len(alpha), 'amount of CDR3 data is not equal to amount of alpha chain data'
             data = data.add(alpha)

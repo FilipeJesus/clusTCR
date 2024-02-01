@@ -4,37 +4,47 @@ import time
 from os.path import join
 import matplotlib.pyplot as plt
 from clustcr import Clustering, datasets
+import argparse
+import os
 
-plt.style.use(['seaborn-white', 'seaborn-paper'])
+
+plt.style.use(['seaborn-v0_8-white', 'seaborn-v0_8-paper'])
 plt.rc('font', family='serif')
 sns.set_palette('Set1')
 sns.set_context('paper', font_scale=1.3)
 
-
-def evaluate_distance_metrics(start, end, step_size, replicates, filename=None):
+def evaluate_distance_metrics(start, end, step_size, replicates, filepath=None):
     final = pd.DataFrame()
     for n in range(start, end, step_size):
         print('###################')
         print(n)
         print('###################')
         for i in range(replicates):
-            
             try:
                 beta = datasets.vdjdb_beta().sample(n)
             except ValueError:
                 break
-            
+
             epi = datasets.vdjdb_beta(epitopes=True)
             epi = epi[epi.CDR3.isin(beta)]
             
             t = time.time()
-            out_HD = Clustering(method='two-step', distance_metric='HAMMING').fit(beta)
+            out_HD = Clustering(
+                method='two-step', distance_metric='HAMMING'
+            ).fit(
+                beta
+            )
+
             t_hd = time.time() - t
-            
+
             t = time.time()
-            out_LD = Clustering(method='two-step', distance_metric='LEVENSHTEIN').fit(beta)
+            out_LD = Clustering(
+                method='two-step', distance_metric='LEVENSHTEIN'
+            ).fit(
+                beta
+            )
             t_ld = time.time() - t
-            
+
             summ_HD = out_HD.metrics(epi).summary()
             summ_HD['n'] = n
             summ_HD['dm'] = 'Hamming'
@@ -43,15 +53,14 @@ def evaluate_distance_metrics(start, end, step_size, replicates, filename=None):
             summ_LD['n'] = n
             summ_LD['dm'] = 'Levenshtein'
             summ_LD['t'] = t_ld
-            final = final.append(summ_HD)
-            final = final.append(summ_LD)
+            final = pd.concat([final, summ_HD, summ_LD])
             
-        if filename is not None:
-            final.to_csv(join('./results/',filename), sep='\t', index=False)
+        if filepath is not None:
+            final.to_csv(filepath, sep='\t', index=False)
             
     return final
     
-def show_results(data):
+def show_results(data, file_path):
     colors = sns.color_palette('Set1')
     
     retent = data[data['metrics']=='retention']
@@ -99,19 +108,51 @@ def show_results(data):
     fig.subplots_adjust(top=1.1, hspace=1, wspace=.5)
     
     handles, labels = ax2.get_legend_handles_labels()
-    fig.legend(handles, labels, loc='center right',
-              bbox_to_anchor=(1.35,0.6))
-    
+    fig.legend(
+        handles, labels, loc='center right',
+        bbox_to_anchor=(1.35,0.6)
+    )
+
     ax1.text(-0.25, 1.50, 'A', transform=ax1.transAxes,fontsize=20, fontweight='bold', va='top', ha='right')
     ax2.text(-0.25, 1.50, 'B', transform=ax2.transAxes,fontsize=20, fontweight='bold', va='top', ha='right')
     ax3.text(-0.25, 1.50, 'C', transform=ax3.transAxes,fontsize=20, fontweight='bold', va='top', ha='right')
     ax4.text(-0.25, 1.50, 'D', transform=ax4.transAxes,fontsize=20, fontweight='bold', va='top', ha='right')
     ax5.text(-0.1, 1.50, 'E', transform=ax5.transAxes,fontsize=20, fontweight='bold', va='top', ha='right')
-    
-    fig.savefig('./results/figures/hd_vs_ld.eps', format='eps', bbox_inches='tight')
-     
+
+    fig.savefig(file_path, format='eps', bbox_inches='tight')
 
 if __name__=="__main__":
-    # results = evaluate_distance_metrics(27400,30001,100,1,filename='hd_vs_ld_part_2.tsv')
-    results = pd.read_csv('./results/hd_vs_ld.tsv', sep='\t')
-    show_results(results)
+
+    parser = argparse.ArgumentParser(
+        description='Evaluate the difference between Hamming and Levenshtein distance.'
+    )
+    parser.add_argument(
+        '--output-dir',
+        type=str,
+        default='./tmp_res/',
+        help='Directory for the output txt and eps file'
+    )
+    parser.add_argument(
+        '--output-filename',
+        type=str,
+        default='hd_vs_ld',
+        help='Filename for the output txt and eps file'
+    )
+
+    args = parser.parse_args()
+
+    filename = args.output_filename
+    output_dir = args.output_dir
+    os.makedirs(output_dir, exist_ok=True)
+    results = evaluate_distance_metrics(
+        27400,30001,100,1,
+        os.path.join(args.output_dir, args.output_filename) + '.txt'
+    )
+    results = pd.read_csv(
+        os.path.join(args.output_dir, args.output_filename) + '.txt',
+        sep='\t'
+    )
+    show_results(
+        results,
+        os.path.join(args.output_dir, args.output_filename) + '.eps'
+    )
