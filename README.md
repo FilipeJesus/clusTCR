@@ -1,4 +1,4 @@
-# clusTCR: a Python interface for rapid clustering of large sets of CDR3 sequences [![Build Status](https://travis-ci.com/svalkiers/clusTCR.svg?branch=main)](https://travis-ci.com/svalkiers/clusTCR) [![conda](https://anaconda.org/svalkiers/clustcr/badges/installer/conda.svg)](https://anaconda.org/svalkiers/clustcr)
+# ClusTCR: a Python interface for rapid clustering of large sets of CDR3 sequences with unknown antigen specificity [![Build Status](https://travis-ci.com/svalkiers/clusTCR.svg?branch=main)](https://travis-ci.com/svalkiers/clusTCR) [![conda](https://anaconda.org/svalkiers/clustcr/badges/installer/conda.svg)](https://anaconda.org/svalkiers/clustcr)
 
 A two-step clustering approach that combines the speed of the [Faiss Clustering Library](https://github.com/facebookresearch/faiss) with the accuracy of [Markov Clustering Algorithm](https://micans.org/mcl/)
 
@@ -31,6 +31,10 @@ $ conda install clustcr-gpu -c svalkiers -c bioconda -c pytorch -c conda-forge
 
 Mind that this is for specific GPUs only, see our [docs](https://svalkiers.github.io/clusTCR/) for more information.
 
+To **update** use a similar command
+```
+$ conda update clustcr -c svalkiers -c bioconda -c pytorch -c conda-forge
+```
 
 ## Development Guide
 
@@ -64,6 +68,26 @@ For the GPU package:
 $ conda build conda/clustcr-gpu/
 ```
 
+## Cite
 
+**Please cite as:**
 
+Sebastiaan Valkiers, Max Van Houcke, Kris Laukens, Pieter Meysman, ClusTCR: a Python interface for rapid clustering of large sets of CDR3  sequences with unknown antigen specificity, *Bioinformatics*, **2021**;, btab446, https://doi.org/10.1093/bioinformatics/btab446
+
+**Bibtex:**
+
+```
+@article{valkiers2021clustcr,
+    author = {Valkiers, Sebastiaan and Van Houcke, Max and Laukens, Kris and Meysman, Pieter},
+    title = "{ClusTCR: a Python interface for rapid clustering of large sets of CDR3 sequences with unknown antigen specificity}",
+    journal = {Bioinformatics},
+    year = {2021},
+    month = {06},
+    issn = {1367-4803},
+    doi = {10.1093/bioinformatics/btab446},
+    url = {https://doi.org/10.1093/bioinformatics/btab446},
+    note = {btab446},
+    eprint = {https://academic.oup.com/bioinformatics/advance-article-pdf/doi/10.1093/bioinformatics/btab446/38660282/btab446.pdf},
+}
+```
 

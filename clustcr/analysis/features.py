@@ -38,12 +38,12 @@ class FeatureGenerator:
         assert correction in cfactors, "Unknown correction factor '{}', please choose one of the following: {}.".format(correction, cfactors)
         
         # Results
-        res = {"h":[], "size":[], "length":[]}
+        res = {"cluster":[], "h":[], "size":[], "length":[]}
         
         # Calculate average information content per amino acid position in cluster
         for clust in self.nodes["cluster"].unique():
             
-            sequences = self.nodes[self.nodes["cluster"]==clust]["CDR3"].tolist() # sequences of one cluster
+            sequences = self.nodes[self.nodes["cluster"]==clust]["junction_aa"].tolist() # sequences of one cluster
             n = len(sequences) # size of cluster
             l = len(sequences[0][1:-1]) # CDR3 length (ignoring pos 1 and -1)
             ic = [] # information content
@@ -78,12 +78,13 @@ class FeatureGenerator:
                         ic.append(information_content / np.log2(n))
                     elif correction == "ssc":
                         ic.append(np.log2(20) - (information_content + en))                        
-                    
+            
+            res["cluster"].append(clust)
             res["h"].append(np.average(ic))
             res["size"].append(n)
             res["length"].append(l)
         
-        return pd.DataFrame(res)
+        return pd.DataFrame(res).set_index("cluster", drop=True)
 
 
     
@@ -98,7 +99,7 @@ class FeatureGenerator:
         physchem_properties = PHYSCHEM
 
         properties = {}
-        for seq in self.nodes["CDR3"]:
+        for seq in self.nodes["junction_aa"]:
             for prop in physchem_properties:
                 if prop not in properties:
                     properties[prop] = []
@@ -137,7 +138,7 @@ class FeatureGenerator:
         
         pgen_model = pgen.GenerationProbabilityVDJ(generative_model, genomic_data)
         
-        p = [pgen_model.compute_aa_CDR3_pgen(seq) for seq in self.nodes["CDR3"]]
+        p = [pgen_model.compute_aa_CDR3_pgen(seq) for seq in self.nodes["junction_aa"]]
         self.nodes["pgen"] = p
         
         pgenvals = pd.concat([self.nodes.groupby("cluster")["pgen"].mean().rename("pgen_avg"),
@@ -172,14 +173,14 @@ class FeatureGenerator:
     
     
     
-    def clustermotif(self, method='standard', cutoff=.9):
+    def clustermotif(self, method='standard', cutoff=.7):
         """
         Calculate a consensus motif representation for a set of sequence
         based on the profile matrix.
         """
         clustermotifs = dict()
         for i in self.clusterids:
-            sequences = self.nodes[self.nodes['cluster'] == i]['CDR3'].tolist()
+            sequences = self.nodes[self.nodes['cluster'] == i]['junction_aa'].tolist()
             profile = profile_matrix(sequences)
             motif = motif_from_profile(profile, method=method, cutoff=cutoff)
             clustermotifs[i] = motif

@@ -1,1 +1,5 @@
-FROM python:3.7.3
+FROM continuumio/miniconda3
+
+COPY ./ ./
+
+RUN conda env create -f conda/env.yml
